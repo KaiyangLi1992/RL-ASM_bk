@@ -1,0 +1,15 @@
+paths:
+  dataset_path: '/home/kli16/esm_NSUBS_RWSE_LapPE/esm/data/MSRC_21/MSRC_21_trainset_dense_noiseratio_5.0_n_16_32_num_01_31_LapPE.pkl'
+  checkpoint_path: '/home/kli16/esm_NSUBS_RWSE_LapPE/esm/ckpt_imitationlearning/2024-03-22_14-00-10/checkpoint_18000.pth'
+hyperparameters:  
+  imitationlearning: true
+  lr_decay: false
+  T_max: 50000
+  weight_decay: 0
+  update_timestep: 2048
+  K_epochs: 3
+  eps_clip: 0.2
+  gamma: 0.99
+  lr: 0.000001
+  batch_size: 2048
+  max_training_episodes: 1000000
