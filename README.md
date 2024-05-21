@@ -7,46 +7,38 @@ The Architecture of our model is as follows:
 
 ## Installation
 
-Package requirements are in `requirements.txt`. Please install required packages and versions. We now provide a Dockerfile to make this setup easier.
+Package requirements are in `environment.yml`. Please install required packages and versions. 
 
-Mark `/model/OurMCS/` and `/src/` as the source directories.
+### Conda Setup
 
-### Docker Setup
-
-To build and run the Docker environment use the commands below:
+To build and run the conda environment use the commands below:
 ```
-cd /path/to/GLSearch
-nvidia-docker build -t "glsearch" .
-nvidia-docker run -e "HOSTNAME=$(cat /etc/hostname)" -v /path/to/GLSearch:/workspace -it glsearch bash
+conda env create -f environment.yml
 ```
 
 ## Datasets
 
-Get the datasets from: https://drive.google.com/drive/folders/1l7_WmO54gPHZ4YwzOqewZtZhWIxn44ZV?usp=sharing
-
-Place the `*.klepto` files under a new directory `/save/OurModelData/` (ex. `/save/OurModelData/aids700nef_..._None.klepto`).
-
-### Google Drive Filename Issues
-
-We noticed Google Drive sometimes renames downloaded files, which will cause issues in data loading. Please check the filenames after downloading.
-
-Data loading is done on `line 310` of `model/OurMCS/data_model.py` (as of commit `4e10d5f79e7f5bd53e74628f52619a0fc10f4c80`). You can check here whether `tp` is pointing to the correct file (NOTE: it is optional whether we include the `.klepto` extension in `tp`).
+Get the raw datasets from: https://chrsmrrs.github.io/datasets/docs/datasets/ and https://snap.stanford.edu/data/email-EuAll.html
+Create the train, valid and test set with the below command:
+'''
+pyhton ./uclasm/matching/data_sampling_pipeline.py
+'''
 
 ## Run
 
 ### Testing
-
-Select 1 of 3 desired dataset on `lines 62-77` of `model/OurMCS/config.py` by commenting out the rest.
-
 Run the below command:
 ```
-python3 main.py
+python ./uclasm/matching/PG_test_RL_iteration.py
 ```
 ### Training
 
-Replace `config.py` with `config_training.py`.
+Run Imitaiton learning with the command:
+```
+pyhton ./uclasm/matching/PG_matching_imitation_learning_undirect_batch.py
+```
+Fine-tune the model with PPO:
+```
+pyhton ./uclasm/matching/PG_matching_RL_PPO_refactor.py
+```
 
-Run the below command:
-```
-python3 main.py
-```
