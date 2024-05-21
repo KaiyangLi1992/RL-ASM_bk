@@ -2,7 +2,7 @@
 This repository is the PyTorch implementation of "Approximate Subgraph Matching with Reinforcement Learning" . For more details, please refer to our paper.
 The Architecture of our model is as follows:
  <p align =“center”>
-    <image  src=framework_0516.jpg width=500 />
+    <image  src=framework_0516.jpg width=1000 />
  </p>
 
 ## Installation
