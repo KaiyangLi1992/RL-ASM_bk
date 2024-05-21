@@ -19,10 +19,11 @@ conda env create -f environment.yml
 ## Datasets
 
 Get the raw datasets from: https://chrsmrrs.github.io/datasets/docs/datasets/ and https://snap.stanford.edu/data/email-EuAll.html
+
 Create the train, valid and test set with the below command:
-'''
+```
 pyhton ./uclasm/matching/data_sampling_pipeline.py
-'''
+```
 
 ## Run
 
