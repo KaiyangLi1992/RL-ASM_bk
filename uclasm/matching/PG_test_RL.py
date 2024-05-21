@@ -8,9 +8,9 @@ import torch.nn as nn
 from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/uclasm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
 
 from NSUBS.model.OurSGM.config import FLAGS
 from NSUBS.model.OurSGM.saver import saver
@@ -82,7 +82,7 @@ def test_checkpoint_model(ckpt_pth,test_dataset):
         model.eval()
         env = environment(test_dataset)
         costs = []
-        for episode in range(100):
+        for episode in range(1000):
         # for episode in range(len(test_dataset.pairs.keys())):
             state_init = env.reset()
             stack = [state_init]
@@ -124,19 +124,19 @@ elif FLAGS.noiseratio == 10:
      noiseratio = '_noiseratio_10.0'
 
 # 使用该函数测试多个检查点
-testset = f'/home/kli16/esm_NSUBS_RWSE_LapPE/esm/data/{FLAGS.dataset}/{FLAGS.dataset}_testset_dense{noiseratio}_n_{num_nodes}_num_01_31_LapPE.pkl'
+testset = f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/data/{FLAGS.dataset}/{FLAGS.dataset}_testset_dense{noiseratio}_n_{num_nodes}_num_01_31_LapPE.pkl'
 # testset = './data/SYNTHETIC/SYNTHETIC_trainset_dense_noiseratio_0_5_10_n_16_32_num_01_31_RWSE.pkl'
 with open(testset,'rb') as f:
     test_dataset = pickle.load(f)
 
 time = FLAGS.modelID
 try:
-    clear_directory(f'/home/kli16/esm_NSUBS_RWSE_LapPE/esm/{FLAGS.ckpt_folder}/{time}_{FLAGS.noiseratio}/')
+    clear_directory(f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/runs_RL_test/{time}_{FLAGS.noiseratio}/')
 except:
     pass
-writer = SummaryWriter(f'/home/kli16/esm_NSUBS_RWSE_LapPE/esm/runs_RL_test/{time}_{FLAGS.noiseratio}/')
+writer = SummaryWriter(f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/runs_RL_test/{time}_{FLAGS.noiseratio}/')
 for i in range(0, 1200000, 2000):
-    checkpoint = f'/home/kli16/esm_NSUBS_RWSE_LapPE/esm/{FLAGS.ckpt_folder}/{time}/checkpoint_{i}.pth'
+    checkpoint = f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/{FLAGS.ckpt_folder}/{time}/checkpoint_{i}.pth'
     average_cost = test_checkpoint_model(checkpoint, test_dataset)
     writer.add_scalar('Metrics/Cost', average_cost, i)
     print(checkpoint)

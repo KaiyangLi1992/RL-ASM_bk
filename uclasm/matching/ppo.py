@@ -45,6 +45,9 @@ class PPO:
         self.lr = config.lr
         self.buffer = RolloutBuffer()
         self.batch_size = config.batch_size
+        self.ec_policy = config.ec_policy
+        self.ec_value = config.ec_value
+        self.ec_entropy = config.ec_entropy
 
         self.policy = _create_model(dim).to(device)
         self.optimizer = optim.AdamW(self.policy.parameters(), self.lr,weight_decay=config.weight_decay) 
@@ -138,12 +141,12 @@ class PPO:
         advantages = torch.stack(advantages) 
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
-        loss_policy = -torch.min(surr1, surr2).mean()/iter_num
+        loss_policy = -torch.min(surr1, surr2).mean()/iter_num * self.ec_policy
 
 
         rewards = torch.stack(rewards)
-        loss_value = 0.5 * nn.MSELoss()(state_values, rewards)/iter_num
-        loss_dist_entropy = - 0.01 * dist_entropys.mean()/iter_num
+        loss_value = 0.5 * nn.MSELoss()(state_values, rewards)/iter_num * self.ec_value
+        loss_dist_entropy = -1 * dist_entropys.mean()/iter_num * self.ec_entropy
         loss = loss_policy + loss_value + loss_dist_entropy
         loss.backward()
 

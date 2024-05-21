@@ -22,11 +22,12 @@ def update_state(state,threshold):
 
     # TODO: Does this break if nodewise changes the candidates?
     while True:
-        state.localcosts[:] = np.maximum(state.localcosts, state.get_localcosts())
-        state.globalcosts[:] = np.maximum(state.globalcosts, state.get_globalcosts())
         state.candidates = state.get_candidates()
         if np.any(np.all(state.candidates == False, axis=1)):
             return
+        state.localcosts[:] = np.maximum(state.localcosts, state.get_localcosts())
+        state.globalcosts[:] = np.maximum(state.globalcosts, state.get_globalcosts())
+        
 
         changed_cands = np.any(state.candidates != old_candidates, axis=1)
         if ~np.any(changed_cands):
@@ -35,8 +36,6 @@ def update_state(state,threshold):
 
 
 
-def swap_source_target(graph):
-    pass
 
 cache = {}
 def get_adjacency_matrix_with_cache(graph):
@@ -47,20 +46,6 @@ def get_adjacency_matrix_with_cache(graph):
         cache[graph_id] = nx.adjacency_matrix(graph,sorted(graph.nodes()))
         
     return cache[graph_id]
-
-cache_T = {}
-def get_adjacency_matrix_with_cache_T(graph):
-    # 使用图的某种唯一标识符作为缓存键
-    graph_id = graph.graph['gid']
-    
-    if graph_id not in cache_T:
-        cache_T[graph_id] = nx.adjacency_matrix(graph,sorted(graph.nodes())).T
-        
-    return cache_T[graph_id]
-
-def iter_adj_pairs(g1, g2,g1_reverse,g2_reverse):
-    yield (get_adjacency_matrix_with_cache(g1),get_adjacency_matrix_with_cache(g2))
-    yield (get_adjacency_matrix_with_cache_T(g1), get_adjacency_matrix_with_cache_T(g2))
 
 
 
@@ -78,7 +63,7 @@ def get_non_matching_mask(state):
 
 class State(object):
     def __init__(self,g1,g2,threshold=np.inf,pruned_space=None,\
-                 ori_candidates=None,g1_reverse=None,g2_reverse=None,nn_mapping={}):
+                 candidates=None,nn_mapping={},attr_sim=None):
         self.g1 = g1
         self.g2 = g2
         self.hn = None
@@ -87,20 +72,18 @@ class State(object):
         self.proba_cache = []
         self.action_space_cache = []
 
-        if g1_reverse == None:
-            self.g1_reverse = swap_source_target(g1)
+        if  attr_sim is None:
+            self.attr_sim = self.get_attr_sim()
         else:
-            self.g1_reverse = g1_reverse
+            self.attr_sim = attr_sim
 
-        if g2_reverse == None:
-            self.g2_reverse = swap_source_target(g2)
-        else:
-            self.g2_reverse = g2_reverse
+       
 
-        if ori_candidates is None:
-            self.ori_candidates = self.generate_ori_candidate()
+        if candidates is None:
+            self.candidates = self.generate_ori_candidate()
         else:
-            self.ori_candidates = ori_candidates
+            self.candidates = candidates
+
         
         if pruned_space is None:
             self.pruned_space = []
@@ -112,7 +95,17 @@ class State(object):
         self.localcosts = np.zeros(self.shape).view(MonotoneArray)
 
         self.threshold = threshold
-        self.candidates = self.ori_candidates.copy()
+    def get_attr_sim(self):
+        g1 = self.g1
+        g2 = self.g2
+        attrs_g1 = np.array([g1.nodes[i]['type'] for i in sorted(g1.nodes)])
+        attrs_g2 = np.array([g2.nodes[i]['type'] for i in sorted(g2.nodes)])
+        
+        similarity_matrix = attrs_g1[:, None] == attrs_g2[None, :]
+        
+        return similarity_matrix
+
+       
         
     
 
@@ -166,27 +159,18 @@ class State(object):
     
     def get_candidates(self):
         candidates =  (self.globalcosts < (self.threshold - 1e-8)).view(np.ndarray)
-        candidates = np.logical_and(self.ori_candidates, candidates)
         return candidates
 
     
         
     def generate_ori_candidate(self):
-        g1 = self.g1
-        g2 = self.g2
-        attrs_g1 = np.array([g1.nodes[i]['type'] for i in sorted(g1.nodes)])
-        attrs_g2 = np.array([g2.nodes[i]['type'] for i in sorted(g2.nodes)])
-        
-        similarity_matrix = attrs_g1[:, None] == attrs_g2[None, :]
-        
+        similarity_matrix = np.ones((self.g1.number_of_nodes(),self.g2.number_of_nodes(),),dtype=np.bool_) 
         return similarity_matrix
     
     
     def get_localcosts(self):
         g1 = self.g1
         g2 = self.g2
-        g1_reverse = self.g1_reverse
-        g2_reverse = self.g2_reverse
         candidates = self.candidates
         local_costs = np.zeros((len(g1.nodes),len(g2.nodes)))
 
@@ -198,7 +182,6 @@ class State(object):
 
         
             total_tmplt_edges = 0
-            # for tmplt_adj, world_adj in iter_adj_pairs(g1, g2,g1_reverse,g2_reverse):
             tmplt_adj = get_adjacency_matrix_with_cache(g1)
             world_adj = get_adjacency_matrix_with_cache(g2)
             tmplt_adj_val = tmplt_adj[src_idx, dst_idx]
@@ -232,6 +215,7 @@ class State(object):
             dst_least_cost = total_tmplt_edges - dst_support.A
             dst_least_cost = np.array(dst_least_cost).flatten()
             local_costs[dst_idx][dst_is_cand] += dst_least_cost
+        local_costs += ~self.attr_sim
         return local_costs
 
 
@@ -249,13 +233,15 @@ class State(object):
             tmplt_idx_mask[tmplt_idx] = False
             world_idx_mask[world_idx] = False
         local_costs = self.localcosts
-        local_costs[~self.ori_candidates] = np.inf
+        local_costs[~self.candidates] = 100000
         partial_match_cost = np.sum([local_costs[match]/2  for match in self.nn_mapping.items()])
         mask = np.ix_(tmplt_idx_mask, world_idx_mask)
         total_match_cost = partial_match_cost
         if np.any(tmplt_idx_mask):
             costs = local_costs[mask] / 2 
-            global_cost_bounds = naive_costs(costs)
+            # global_cost_bounds = naive_costs(costs)
+            global_cost_bounds = clap.costs(costs)
+            # assert np.array_equal(global_cost_bounds, global_cost_bounds)
             global_costs[mask] = np.maximum( global_costs[mask],global_cost_bounds) + partial_match_cost
             total_match_cost += np.min(global_cost_bounds)
         non_matching_mask = get_non_matching_mask(self)

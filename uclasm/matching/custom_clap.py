@@ -3,7 +3,7 @@ from laptools import lap
 from laptools import clap
 
 def one_hot(idx, length):
-    one_hot = np.zeros(length, dtype=np.bool)
+    one_hot = np.zeros(length, dtype=np.bool_)
     one_hot[idx] = True
     return one_hot
 

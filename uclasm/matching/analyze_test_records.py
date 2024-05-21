@@ -1,9 +1,10 @@
 import pickle
-with open('records_2024-02-03_12-18-49_noiseratio_10_whole_matching.pkl','rb') as f:
+with open('records_MSRC_21_noiseratio_10_RL_iteration.pkl','rb') as f:
     records = pickle.load(f)
 
 steps = records['steps']
 costs = records['costs']
+costs_wo_bt = records['costs_wo_bt']
 times = records['times']
 times_lower_bound = records['times_lower_bound']
 times_infer = records['times_infer']
@@ -16,9 +17,18 @@ indices = find_indices(steps)
 print(f'Number of cases sloved within 5000 steps: {str(len(indices))}')
 print(f'Ratio of cases sloved within 5000 steps: {len(indices)/len(steps)}')
 
+avg_cost = sum(costs)/len(costs)
+print(f'Average costs: {str(avg_cost)}')
+
+avg_cost = sum(costs_wo_bt)/len(costs_wo_bt)
+print(f'Average costs_wo_bt: {str(avg_cost)}')
+
 steps_solved= [steps[i] for i in indices]
 avg_step = sum(steps_solved)/len(indices)
 print(f'Average steps in sloved cases: {str(avg_step)}')
+
+
+
 
 
 times_solved= [times[i] for i in indices]

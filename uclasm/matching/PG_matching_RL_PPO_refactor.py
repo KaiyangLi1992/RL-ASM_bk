@@ -7,16 +7,17 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import pickle
 import sys
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/uclasm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
 # Custom module imports
 from NSUBS.model.OurSGM.config import FLAGS
 from NSUBS.model.OurSGM.saver import ParameterSaver
 from environment import environment,calculate_cost
 import torch_geometric
 from yacs.config import CfgNode as CN
-from ppo_batch_update import PPO
+# from ppo_non_adv import PPO
+from ppo import PPO
 torch_geometric.seed_everything(1)
 
 
@@ -26,6 +27,7 @@ torch_geometric.seed_everything(1)
 
 
 def main():
+    # with open(f"{FLAGS.dataset}_PPO_non_adv_config.yaml", 'r') as f:
     with open(f"{FLAGS.dataset}_PPO_config.yaml", 'r') as f:
         yaml_content = f.read()
         cfg = CN.load_cfg(yaml_content)
@@ -70,7 +72,7 @@ def main():
                 break
        
 
-        if episode % update_timestep == 0:
+        if episode % update_timestep == 0 and episode != 0:
             
             loss,loss_policy,loss_value,loss_dist_entropy = ppo_agent.update()
             
@@ -81,7 +83,7 @@ def main():
 
 
         
-        if episode % 10 == 0:
+        if episode % 10 == 0 and episode >= update_timestep:
             writer.add_scalar('Cost', cost, episode)
             writer.add_scalar('Loss/total', loss, episode)
             writer.add_scalar('Loss/policy', loss_policy, episode)
@@ -91,7 +93,7 @@ def main():
             print(f"Lost:{loss}")
 
 
-        if episode % 500 == 0:
+        if episode % 2000 == 0:
         # 创建一个检查点每隔几个时期
             checkpoint = {
                 'epoch': episode,

@@ -6,9 +6,9 @@ import torch.nn as nn
 from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/uclasm/") 
-sys.path.append("/home/kli16/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
 from matching.environment_heuristic import environment
 from NSUBS.model.OurSGM.config import FLAGS
 import torch.nn.functional as F
@@ -21,16 +21,9 @@ from PG_matching_RL_PPO import _create_batch_data,_preprocess_NSUBS,_create_mode
 import time
 torch_geometric.seed_everything(1)
 import copy
+from environment import calculate_cost
 
-def calculate_cost(small_graph, big_graph, mapping):
-    cost = 0
-    for edge in small_graph.edges():
-        mapped_edge = (mapping[edge[0]], mapping[edge[1]])
-        if not big_graph.has_edge(*mapped_edge):
-            cost += 1
-    return cost
-
-model = _create_model(40)
+model = _create_model(FLAGS.dim)
 
 def test_checkpoint_model(ckpt_pth,test_dataset):
     
@@ -46,34 +39,45 @@ def test_checkpoint_model(ckpt_pth,test_dataset):
         times = []
         times_lower_bound = []
         times_infer = []
-        for episode in range(len(test_dataset.pairs.keys())): 
+        costs_wo_bt = []
+        for episode in range(100): 
+            print(f'episode:{episode}')
             start_time = time.time()
+            duration = 600
             min_cost = np.inf
             state_init = env.reset()
             stack = [state_init]
             step = 0 
             state_init.candidates = state_init.get_candidates()
-            cache_mapping = set()
+            cache_global_cost = {}
+            cache_action_prob = set()
             while stack:
-                step += 1
-                if step > 5000:
+                step += 1 
+                current_time = time.time()  # 获取当前时间
+                if current_time - start_time > duration:
                     step = -1
                     break
                 state = stack.pop()
-                start_time_lower_bound = time.time()
+                
                 mapping_tuples = tuple(sorted(state.nn_mapping.items(), key=lambda item: item[0], reverse=True))
-                if mapping_tuples not in cache_mapping:
+                if mapping_tuples not in cache_global_cost:
                     update_state(state,min_cost)
+                    start_time_lower_bound = time.time()
+                    cache_global_cost[mapping_tuples] = state.globalcosts
+                    end_time_lower_bound = time.time()
+                    times_lower_bound.append(end_time_lower_bound - start_time_lower_bound)
+                else:
+                    state.globalcosts = cache_global_cost[mapping_tuples]
                     
-                end_time_lower_bound = time.time()
-                times_lower_bound.append(end_time_lower_bound - start_time_lower_bound)
+                
+                
                 if np.any(np.all(state.candidates == False, axis=1)):
                     continue
                 state.action_space,terminal = state.get_action_space(env.order)
                 if terminal:
                     continue
 
-                if mapping_tuples not in cache_mapping:
+                if mapping_tuples not in cache_action_prob:
                     start_time_infer = time.time()
                     pre_processed = _preprocess_NSUBS(state,0)
                     batch, data = _create_batch_data([pre_processed])
@@ -93,7 +97,7 @@ def test_checkpoint_model(ckpt_pth,test_dataset):
                     end_time_infer = time.time()
                     times_infer.append(end_time_infer - start_time_infer)
 
-                    cache_mapping.add(mapping_tuples)
+                    cache_action_prob.add(mapping_tuples)
 
                 else:
                     _,action_ind = state.proba_cache.max(0)
@@ -102,46 +106,57 @@ def test_checkpoint_model(ckpt_pth,test_dataset):
 
                 
                 state.proba_cache[action_ind] = -1
-                new_state,state, reward, done = env.step(state, action)
+                new_state,state,  done = env.step(state, action)
                 stack.append(state)   
             
                 if done:
                     cost = calculate_cost(new_state.g1,new_state.g2,new_state.nn_mapping)
+                    print(cost)
+                    if min_cost == np.inf:
+                        costs_wo_bt.append(cost)
                     # print(np.min(new_state.get_globalcosts()))
                     if cost < min_cost:
                         min_cost = cost
-                        cache_mapping = set()
+                        cache_global_cost = {}
+                        cache_action_prob = set()
                     if min_cost==0:
                         break
                     continue
+                    # break
 
                 else:
                     stack.append(new_state)
             # print(step)
             end_time = time.time() 
             steps.append(step)
-            costs.append(cost)
+            costs.append(min_cost)
             times.append(end_time - start_time)
 
         records = {}
         records['steps'] = steps
-        records['costs'] = min_cost
+        records['costs'] = costs
         records['times'] = times
         records['times_lower_bound'] = times_lower_bound
         records['times_infer'] = times_infer
+        records['costs_wo_bt'] = costs_wo_bt
 
 
     
         return records
-
+if FLAGS.noiseratio == 0:
+    noiseratio = '_noiseratio_0'
+elif FLAGS.noiseratio == 5:
+     noiseratio = '_noiseratio_5.0'
+elif FLAGS.noiseratio == 10:
+     noiseratio = '_noiseratio_10.0'
 
 # 使用该函数测试多个检查点
 # with open('/home/kli16/ISM_custom/esm_NSUBS_RWSE_debug/esm/data/unEmail_testset_dense_noiseratio_2_n_16_num_200_01_16_RWSE.pkl','rb') as f:
-with open('./data/AIDS/AIDS_testset_sparse_n_6_10_num_01_31_RWSE.pkl','rb')  as f:
+with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_testset_dense{noiseratio}_n_{FLAGS.subgraph_node_num}_num_01_31_LapPE.pkl','rb')  as f:
     test_dataset = pickle.load(f)
-checkpoint = f'/home/kli16/esm_NSUBS_RWSE_LapPE/esm/ckpt_imitationlearning/2024-02-03_12-18-49/checkpoint_50000.pth'
+checkpoint = f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/ckpt_RL/{FLAGS.modelID}/checkpoint_{FLAGS.ckptID}.pth'
 records = test_checkpoint_model(checkpoint,test_dataset)
 
-with open('records_2024-02-03_12-18-49_noiseratio_0_whole_matching.pkl','wb') as f:
+with open(f'records_{FLAGS.dataset}_noiseratio_{FLAGS.noiseratio}_RL_iteration.pkl','wb') as f:
     pickle.dump(records,f)
 

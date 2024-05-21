@@ -138,7 +138,7 @@ class PPO:
         advantages = torch.stack(advantages) 
         surr1 = ratios * advantages
         surr2 = torch.clamp(ratios, 1-self.eps_clip, 1+self.eps_clip) * advantages
-        loss_policy = -torch.min(surr1, surr2).mean()
+        loss_policy = -torch.min(surr1, surr2).mean() * 1000
 
 
         rewards = torch.stack(rewards)

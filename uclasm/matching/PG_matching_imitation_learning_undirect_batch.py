@@ -9,12 +9,10 @@ from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
 
-sys.path.extend([
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm",
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/",
-        "/home/kli16/esm_NSUBS_RWSE_trans_batch/esm/uclasm/",
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/NSUBS/",
-    ])
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
+sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
+
 
 from tqdm import tqdm
 from NSUBS.model.OurSGM.config import FLAGS
@@ -244,6 +242,8 @@ def _create_batch_data(pre_processed_li):
 
 def main():
     model = _create_model(dim).to(device)
+
+
     
     model.train()
     writer = SummaryWriter(f'plt_imitationlearning/{timestamp}')
@@ -252,24 +252,31 @@ def main():
     warmup_epochs = 500
     optimizer = optim.AdamW(model.parameters(), lr=FLAGS.lr,weight_decay=1e-3)
     lambda1 = lambda epoch: epoch / warmup_epochs if epoch < warmup_epochs else 1
+    
 
 
     scheduler_warmup = LambdaLR(optimizer, lr_lambda=lambda1)
     scheduler_cos = optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=50000)
 
 
+    checkpoint_path ='/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/ckpt_imitationlearning/2024-03-22_14-00-10/checkpoint_28000.pth'
+    checkpoint = torch.load(checkpoint_path,map_location=torch.device(FLAGS.device))
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict']) 
+
+
     with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
         pre_processed_li1 = pickle.load(f)
-    # with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_5.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
-    #     pre_processed_li2 = pickle.load(f)
-    # with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_10.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
-    #     pre_processed_li3 = pickle.load(f)
+    with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_5.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
+        pre_processed_li2 = pickle.load(f)
+    with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_10.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
+        pre_processed_li3 = pickle.load(f)
 
 
 
-    # pre_processed_li = pre_processed_li1 + pre_processed_li2+pre_processed_li3
+    pre_processed_li = pre_processed_li1 + pre_processed_li2+pre_processed_li3
     # # pre_processed_li1 = pre_processed_li1 * 120
-    dataloader = _create_batch_data(pre_processed_li1[:5000])
+    dataloader = _create_batch_data(pre_processed_li[:])
     loss_value = nn.MSELoss()
 
    
@@ -326,11 +333,9 @@ def main():
 
                 print(ave_acc)
                 print(loss_batch)
+
             optimizer.zero_grad()
             loss_batch.backward()
-
-            # torch.nn.utils.clip_grad_norm_(model.parameters(), 0.1)
-
             optimizer.step()
         
             
