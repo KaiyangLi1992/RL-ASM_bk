@@ -1,4 +1,4 @@
-name: graphgps3
+name: RL_ASM_env
 channels:
   - pytorch
   - nvidia
@@ -189,7 +189,6 @@ dependencies:
       - pure-eval==0.2.2
       - pyasn1==0.5.1
       - pyasn1-modules==0.3.0
-      - pyg-lib==0.3.0+pt20cu117
       - pygments==2.17.2
       - pympler==1.0.1
       - pyparsing==3.1.1
@@ -214,12 +213,6 @@ dependencies:
       - threadpoolctl==3.2.0
       - tomli==2.0.1
       - toolz==0.12.1
-      - torch-cluster==1.6.3+pt20cu117
-      - torch-geometric==2.4.0
-      - torch-scatter==2.1.2+pt20cu117
-      - torch-sparse==0.6.18+pt20cu117
-      - torch-spline-conv==1.2.2+pt20cu117
-      - torchmetrics==1.2.0
       - torchvision==0.15.2
       - traitlets==5.14.1
       - tzdata==2023.3
