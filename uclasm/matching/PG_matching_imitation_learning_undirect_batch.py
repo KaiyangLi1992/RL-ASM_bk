@@ -1,53 +1,33 @@
-import time
 import torch.nn.functional as F
 import pickle
-import sys
-import random
 import torch
 import torch.nn as nn
-from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
-
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
-
-
 from tqdm import tqdm
+from sys_path_config import extend_sys_path
+extend_sys_path()
 from NSUBS.model.OurSGM.config import FLAGS
 from NSUBS.model.OurSGM.saver import saver
-from NSUBS.model.OurSGM.data_loader import get_data_loader_wrapper
-from NSUBS.model.OurSGM.train import train
-from NSUBS.model.OurSGM.test import test
 from NSUBS.model.OurSGM.model_glsearch import GLS
 from NSUBS.model.OurSGM.utils_our import load_replace_flags
-from NSUBS.src.utils import OurTimer, save_pickle
 from NSUBS.model.OurSGM.dvn_wrapper import create_dvn
 from NSUBS.model.OurSGM.train import cross_entropy_smooth
-from torch.utils.data import Dataset, DataLoader,ConcatDataset,Subset
+from torch.utils.data import Dataset, DataLoader
 from torch_geometric.data import Batch
 from NSUBS.src.utils import from_networkx
 from NSUBS.model.OurSGM.dvn_wrapper import create_u2v_li
-from networkx.algorithms import isomorphism
 import torch.nn.functional as F
 from torch.utils.tensorboard import SummaryWriter
 import os
-import shutil
-import networkx as nx
-import random
-import gc
-import datetime
-import torch.optim.lr_scheduler as lr_scheduler
-# from PG_matching_ImitationLearning_concat import policy_network
-from environment import environment, get_init_action, calculate_cost
 import sys
-import argparse
+import datetime
 import torch_geometric.utils as pyg_utils
-import os
 from torch.optim.lr_scheduler import LambdaLR
-from torch_geometric.data import Batch, Data
+from torch_geometric.data import Batch
 import torch_geometric
+from yacs.config import CfgNode as CN
+from config_loader import Config
 torch_geometric.seed_everything(1)
 
 def separate_graphs(batch_data):
@@ -59,21 +39,24 @@ def separate_graphs(batch_data):
     return graphs
 
 
-device = torch.device(FLAGS.device)
+dataset = 'MSRC_21'
+Config.load_config(f"./config/{dataset}_Imit_config.yaml")
+# with open(f"./{dataset}_Imit_config.yaml", 'r') as f:
+#     yaml_content = f.read()
+cfg = CN.load_cfg(Config.get_config())
+device = torch.device(device = str(f'cuda:{cfg.gpu.id}'))
 timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
-if FLAGS.dataset == 'AIDS':
-    dim = 40
-if FLAGS.dataset == 'SYNTHETIC':
-    dim = 13
-if FLAGS.dataset == 'EMAIL':
-    dim = 47
-if FLAGS.dataset == 'MSRC_21':
-    dim = 27
+dim = cfg.dataset.attr_dim
+# if FLAGS.dataset == 'AIDS':
+#     dim = 40
+# if FLAGS.dataset == 'SYNTHETIC':
+#     dim = 13
+# if FLAGS.dataset == 'EMAIL':
+#     dim = 47
+# if FLAGS.dataset == 'MSRC_21':
+#     dim = 27
 # else:
 #     dim = 47
-
-
-timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 
 def _create_model(d_in_raw):
     if FLAGS.matching_order == 'nn':
@@ -92,19 +75,13 @@ def _create_model(d_in_raw):
             if FLAGS.glsearch:
                 model = GLS()
             else:
-                model = create_dvn(d_in_raw, FLAGS.d_enc)
+                model = create_dvn(d_in_raw, cfg.dataset.node_dim)
                 # model = DGMC()
         saver.log_model_architecture(model, 'model')
         return model.to(FLAGS.device)
     else:
         return None
     
-
-
-
-def _get_CS(state,g1,g2):
-    result = {i: np.where(row)[0].tolist() for i, row in enumerate(state.candidates)}
-    return result
 
 
 
@@ -235,7 +212,7 @@ def _create_batch_data(pre_processed_li):
     # pickle.dump(data_for_model_label, open(f'data_for_model_label.pkl', 'wb'))
     # with open('./data/EMAIL/EMAIL_trainset_dense_noiseratio_all_packed_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
     #     data_for_model_label = pickle.load(f)
-    data_loader = DataLoader(data_for_model_label, batch_size=1024, collate_fn=my_collate_fn,shuffle=True)
+    data_loader = DataLoader(data_for_model_label, batch_size=cfg.training.batch_size, collate_fn=my_collate_fn,shuffle=True)
     batch = next(iter(data_loader))
     return data_loader
 
@@ -250,33 +227,35 @@ def main():
 
     FLAGS.lr = 1e-3
     warmup_epochs = 500
-    optimizer = optim.AdamW(model.parameters(), lr=FLAGS.lr,weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=cfg.training.lr,weight_decay=cfg.training.weight_decay)
     lambda1 = lambda epoch: epoch / warmup_epochs if epoch < warmup_epochs else 1
     
 
 
     scheduler_warmup = LambdaLR(optimizer, lr_lambda=lambda1)
-    scheduler_cos = optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=50000)
+    scheduler_cos = optim.lr_scheduler.CosineAnnealingLR(optimizer,T_max=cfg.training.T_max)
 
 
-    checkpoint_path ='/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/ckpt_imitationlearning/2024-03-22_14-00-10/checkpoint_28000.pth'
-    checkpoint = torch.load(checkpoint_path,map_location=torch.device(FLAGS.device))
-    model.load_state_dict(checkpoint['model_state_dict'])
-    optimizer.load_state_dict(checkpoint['optimizer_state_dict']) 
+    # checkpoint_path ='/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/ckpt_imitationlearning/2024-03-22_14-00-10/checkpoint_28000.pth'
+    # checkpoint = torch.load(checkpoint_path,map_location=torch.device(FLAGS.device))
+    # model.load_state_dict(checkpoint['model_state_dict'])
+    # optimizer.load_state_dict(checkpoint['optimizer_state_dict']) 
+
+    print("Loading data with noise ratio 0...")
+    with open(cfg.file_paths.dataset_noise_0, 'rb') as f:
+        pre_processed_li0 = pickle.load(f)
+    print("Loading data with noise ratio 5...")
+    with open(cfg.file_paths.dataset_noise_5, 'rb') as f:
+        pre_processed_li5 = pickle.load(f)
+    print("Loading data with noise ratio 10...")
+    with open(cfg.file_paths.dataset_noise_10, 'rb') as f:
+        pre_processed_li10 = pickle.load(f)
 
 
-    with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
-        pre_processed_li1 = pickle.load(f)
-    with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_5.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
-        pre_processed_li2 = pickle.load(f)
-    with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_trainset_dense_noiseratio_10.0_n_16_32_num_01_31_LapPE_imitationlearning_processed_li_RI_order.pkl', 'rb') as f:
-        pre_processed_li3 = pickle.load(f)
-
-
-
-    pre_processed_li = pre_processed_li1 + pre_processed_li2+pre_processed_li3
-    # # pre_processed_li1 = pre_processed_li1 * 120
-    dataloader = _create_batch_data(pre_processed_li[:])
+    print("Processing data...")
+    pre_processed_li = pre_processed_li0 + pre_processed_li5+pre_processed_li10
+    # pre_processed_li1 = pre_processed_li1 * 120
+    dataloader = _create_batch_data(pre_processed_li)
     loss_value = nn.MSELoss()
 
    
@@ -284,7 +263,7 @@ def main():
 
 
     step = 0
-    for episode in range(1000):
+    for episode in range(cfg.training.epochs):
         for batch in dataloader:
             if step < warmup_epochs:
                 scheduler_warmup.step()
@@ -293,7 +272,7 @@ def main():
 
             batch_input = batch[:-2]
             label = batch[-2]
-            value_truth =  [0.68*i for i in batch[-1]]
+            value_truth =  [cfg.training.discount * i for i in batch[-1]]
           
             out_policy, out_value = \
                 model(*batch_input,
@@ -327,12 +306,9 @@ def main():
                 writer.add_scalar('Loss/policy', loss_policy_batch, step)
                 writer.add_scalar('Loss/value', loss_value_batch, step)
                 writer.add_scalar('ACC', ave_acc, step)
-                # writer.add_scalar('Value/0', out_value[0].item(), step)
-                # writer.add_scalar('Value/3', out_value[3].item(), step)
-                # writer.add_scalar('Value/7', out_value[7].item(), step)
 
-                print(ave_acc)
-                print(loss_batch)
+                print(f"Ave_acc:{ave_acc}")
+                print(f"Loss:{loss_batch.cpu().item()}")
 
             optimizer.zero_grad()
             loss_batch.backward()

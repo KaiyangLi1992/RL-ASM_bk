@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch_geometric.graphgym.register as register
 from torch_geometric.graphgym.config import cfg
 from torch_geometric.graphgym.register import register_node_encoder
-
+from config_loader import Config
 
 @register_node_encoder('LapPE')
 class LapPENodeEncoder(torch.nn.Module):
@@ -22,8 +22,8 @@ class LapPENodeEncoder(torch.nn.Module):
         super().__init__()
         from yacs.config import CfgNode as CN
         yaml_name = 'EMAIL_GateGCN_LapPE_RWSE.yaml'
-        with open(yaml_name, 'r') as f:
-            yaml_content = f.read()
+        
+        yaml_content = Config.get_config()
         cfg = CN.load_cfg(yaml_content)
           # Expected original input node features dim
 

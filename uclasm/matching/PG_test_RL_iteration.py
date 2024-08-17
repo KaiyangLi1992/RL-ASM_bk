@@ -6,9 +6,8 @@ import torch.nn as nn
 from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
+from sys_path_config import extend_sys_path
+extend_sys_path()
 from matching.environment_heuristic import environment
 from NSUBS.model.OurSGM.config import FLAGS
 import torch.nn.functional as F
@@ -22,7 +21,9 @@ import time
 torch_geometric.seed_everything(1)
 import copy
 from environment import calculate_cost
-
+from config_loader import Config
+dataset = FLAGS.dataset
+Config.load_config(f"./config/{dataset}_PPO_config.yaml")
 model = _create_model(FLAGS.dim)
 
 def test_checkpoint_model(ckpt_pth,test_dataset):
@@ -111,7 +112,7 @@ def test_checkpoint_model(ckpt_pth,test_dataset):
             
                 if done:
                     cost = calculate_cost(new_state.g1,new_state.g2,new_state.nn_mapping)
-                    print(cost)
+                    print(f"cost:{cost}")
                     if min_cost == np.inf:
                         costs_wo_bt.append(cost)
                     # print(np.min(new_state.get_globalcosts()))
@@ -150,11 +151,11 @@ elif FLAGS.noiseratio == 5:
 elif FLAGS.noiseratio == 10:
      noiseratio = '_noiseratio_10.0'
 
-# 使用该函数测试多个检查点
+
 # with open('/home/kli16/ISM_custom/esm_NSUBS_RWSE_debug/esm/data/unEmail_testset_dense_noiseratio_2_n_16_num_200_01_16_RWSE.pkl','rb') as f:
 with open(f'./data/{FLAGS.dataset}/{FLAGS.dataset}_testset_dense{noiseratio}_n_{FLAGS.subgraph_node_num}_num_01_31_LapPE.pkl','rb')  as f:
     test_dataset = pickle.load(f)
-checkpoint = f'/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/ckpt_RL/{FLAGS.modelID}/checkpoint_{FLAGS.ckptID}.pth'
+checkpoint = f'./ckpt_RL/MSRC_21_RL.pth'
 records = test_checkpoint_model(checkpoint,test_dataset)
 
 with open(f'records_{FLAGS.dataset}_noiseratio_{FLAGS.noiseratio}_RL_iteration.pkl','wb') as f:

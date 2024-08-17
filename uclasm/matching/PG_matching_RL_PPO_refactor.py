@@ -7,9 +7,8 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 import pickle
 import sys
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/uclasm/") 
-sys.path.append("/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm_LapPE/GraphGPS/") 
+from sys_path_config import extend_sys_path
+extend_sys_path()
 # Custom module imports
 from NSUBS.model.OurSGM.config import FLAGS
 from NSUBS.model.OurSGM.saver import ParameterSaver
@@ -18,26 +17,23 @@ import torch_geometric
 from yacs.config import CfgNode as CN
 # from ppo_non_adv import PPO
 from ppo import PPO
+from config_loader import Config
 torch_geometric.seed_everything(1)
 
 
 
-
-
-
-
 def main():
-    # with open(f"{FLAGS.dataset}_PPO_non_adv_config.yaml", 'r') as f:
-    with open(f"{FLAGS.dataset}_PPO_config.yaml", 'r') as f:
-        yaml_content = f.read()
-        cfg = CN.load_cfg(yaml_content)
+    dataset = FLAGS.dataset
+    Config.load_config(f"./config/{dataset}_PPO_config.yaml")
+    cfg = CN.load_cfg(Config.get_config())
+    device = torch.device(device = str(f'cuda:{cfg.gpu.id}'))
     with open(cfg.paths.dataset_path, 'rb') as f:
         dataset = pickle.load(f)
-    ckpt = torch.load(cfg.paths.checkpoint_path,map_location=torch.device(FLAGS.device))
+    ckpt = torch.load(cfg.paths.checkpoint_path,map_location=torch.device(device))
 
-    max_training_episodes = cfg.hyperparameters.max_training_episodes
-    update_timestep = cfg.hyperparameters.update_timestep
-    lr_decay = cfg.hyperparameters.lr_decay
+    max_training_episodes = cfg.training.max_training_episodes
+    update_timestep = cfg.training.update_timestep
+    lr_decay = cfg.training.lr_decay
 
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
     writer = SummaryWriter(f'plt_RL/{timestamp}')
@@ -45,14 +41,14 @@ def main():
     parameters = {
         'pid': os.getpid(),
         'file_path':os.path.abspath(__file__),
-        'cfg':yaml_content
+        'cfg':Config.get_config()
 
     }
     saverP.save(parameters,file_name=f'{timestamp}.log')
 
 
     env  = environment(dataset)
-    ppo_agent = PPO(cfg.hyperparameters,ckpt)
+    ppo_agent = PPO(cfg.training,ckpt)
    
     for episode in range(max_training_episodes):
 
@@ -94,12 +90,10 @@ def main():
 
 
         if episode % 2000 == 0:
-        # 创建一个检查点每隔几个时期
             checkpoint = {
                 'epoch': episode,
                 'model_state_dict': ppo_agent.policy_old.state_dict(),
                 'optimizer_state_dict': ppo_agent.optimizer.state_dict(),
-                # ... (其他你想保存的元数据)
             }
             directory_name = f"ckpt_RL/{timestamp}/"
             if not os.path.exists(directory_name):

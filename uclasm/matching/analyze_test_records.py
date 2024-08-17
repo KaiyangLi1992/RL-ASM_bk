@@ -1,5 +1,6 @@
 import pickle
-with open('records_MSRC_21_noiseratio_10_RL_iteration.pkl','rb') as f:
+import numpy as np
+with open('./result/records_MSRC_21_noiseratio_10_RL_iteration.pkl','rb') as f:
     records = pickle.load(f)
 
 steps = records['steps']
@@ -14,11 +15,13 @@ def find_indices(lst):
 indices = find_indices(steps)
 
 
-print(f'Number of cases sloved within 5000 steps: {str(len(indices))}')
-print(f'Ratio of cases sloved within 5000 steps: {len(indices)/len(steps)}')
+print(f'Number of cases sloved within 600 seconds: {str(len(indices))}')
+print(f'Ratio of cases sloved within 600 seconds: {len(indices)/len(steps)}')
 
 avg_cost = sum(costs)/len(costs)
-print(f'Average costs: {str(avg_cost)}')
+print(f'Average GED: {str(avg_cost)}')
+std_dev = np.std(costs)
+print("std:", std_dev)
 
 avg_cost = sum(costs_wo_bt)/len(costs_wo_bt)
 print(f'Average costs_wo_bt: {str(avg_cost)}')

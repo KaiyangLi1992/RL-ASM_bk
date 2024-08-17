@@ -1,11 +1,7 @@
 import networkx as nx
 import sys 
-sys.path.extend([
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm",
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/uclasm/",
-        "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/NSUBS/",
-    ])
-
+from sys_path_config import extend_sys_path
+extend_sys_path()
 from dataset import OurDataset
 from graph import RegularGraph
 from graph_pair import GraphPair
@@ -17,22 +13,16 @@ from NSUBS.model.OurSGM.data_loader import _get_enc_X
 from tqdm import tqdm
 from collections import deque
 
-dataset = 'EMAIL'
+dataset = 'MSRC_21'
 dense = True
 num_min = 16
 num_max = 32
 
 def bfs_sampled_subgraph(G, n, m):
-    """
-    从图G中采样一个包含节点数在[n, m]区间内的导出子图。
-    G: 原始图
-    n: 最小节点数
-    m: 最大节点数
-    """
 
 
     if len(G.nodes()) < n:
-        raise ValueError("图中的节点不足以形成所需大小的子图")
+        raise ValueError("error")
     while True:
         n_stop = random.randint(n, m)
 
@@ -148,7 +138,7 @@ if dataset == 'EMAIL':
         graph = pickle.load(f)
         graphs = [graph]
 else:
-    graphs = read_graphs('./data/SYNTHETIC/SYNTHETIC_A.txt', './data/SYNTHETIC/SYNTHETIC_graph_indicator.txt','./data/SYNTHETIC/SYNTHETIC_node_labels.txt')
+    graphs = read_graphs('./data/MSRC_21/MSRC_21_A.txt', './data/MSRC_21/MSRC_21_graph_indicator.txt','./data/MSRC_21/MSRC_21_node_labels.txt')
 
 
 

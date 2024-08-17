@@ -1,8 +1,4 @@
-from add_noise_dataset import add_noise
-from check_isomorphic import check_isomorphic
-from deduplication_dataset import  deduplication_dataset
-from create_feature import create_feature_LapPE,create_feature_RWSE
-from create_data_imtationlearning_batch import create_batch
+
 import sys
 sys.path.extend([
         "/home/kli16/esm_NSUBS_RWSE_LapPE/esm",
@@ -10,6 +6,12 @@ sys.path.extend([
         "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/",
         "/home/kli16/esm_NSUBS_RWSE_LapPE/esm/NSUBS/"
     ])
+
+from add_noise_dataset import add_noise
+from check_isomorphic import check_isomorphic
+from deduplication_dataset import  deduplication_dataset
+from create_feature import create_feature_LapPE,create_feature_RWSE
+from create_data_imtationlearning_batch import create_batch
 from dataset import OurDataset
 from graph import RegularGraph
 from graph_pair import GraphPair

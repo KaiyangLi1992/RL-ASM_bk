@@ -8,24 +8,14 @@ import torch.nn as nn
 from torch.distributions import Categorical
 import numpy as np
 import torch.optim as optim
-
-sys.path.extend([
-        "/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm",
-        "/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm/GraphGPS/",
-        "/home/kli16/ISM_custom/esm_NSUBS_RWSE_trans_batch/esm/uclasm/",
-        "/home/kli16/ISM_custom/esm_NSUBS_RWSE_LapPE/esm/NSUBS/",
-    ])
+from sys_path_config import extend_sys_path
+extend_sys_path()
 
 
 from NSUBS.model.OurSGM.config import FLAGS
-from NSUBS.model.OurSGM.data_loader import get_data_loader_wrapper
-from NSUBS.model.OurSGM.train import train
-from NSUBS.model.OurSGM.test import test
 from NSUBS.model.OurSGM.model_glsearch import GLS
 from NSUBS.model.OurSGM.utils_our import load_replace_flags
-from NSUBS.src.utils import OurTimer, save_pickle
 from NSUBS.model.OurSGM.dvn_wrapper import create_dvn
-from NSUBS.model.OurSGM.train import cross_entropy_smooth
 from torch.utils.data import Dataset, DataLoader,ConcatDataset,Subset
 from torch_geometric.data import Batch
 # from torch_geometric.utils import from_networkx
@@ -283,7 +273,7 @@ def create_batch(dataset_name,noiseratio):
         
 
 def main():
-    create_batch('EMAIL',0)     
+    create_batch('MSRC_21',0.05)     
     
 
 if __name__ == '__main__':

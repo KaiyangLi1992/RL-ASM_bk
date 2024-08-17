@@ -9,6 +9,7 @@ from NSUBS.model.OurSGM.config import FLAGS
 from NSUBS.model.OurSGM.utils_nn import MLP, get_MLP_args, NormalizeAttention
 from torch_scatter import scatter_mean
 from yacs.config import CfgNode as CN
+from config_loader import Config
 from graphgps.layer.gps_layer import GPSLayer
 
 
@@ -35,8 +36,8 @@ def create_ourgmn_disentangled(dim_in, dim_out, q2t, t2q, gnn_subtype):
         gnn_t = TransformerConv(dim_in, dim_out)
         gnn_q = TransformerConv(dim_in, dim_out)
     elif gnn_subtype == 'graphgps':
-        with open(FLAGS.graphgps_config_path, 'r') as f:
-            yaml_content = f.read()
+        
+        yaml_content = Config.get_config()
 
         # 使用 load_cfg 方法将 YAML 内容转换为 CfgNode 对象
         cfg = CN.load_cfg(yaml_content)

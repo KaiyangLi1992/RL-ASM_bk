@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from yacs.config import CfgNode as CN
 from NSUBS.model.OurSGM.config import FLAGS
+from config_loader import Config
 from graphgps.encoder.laplace_pos_encoder import LapPENodeEncoder
 def create_preencoder(d_in_raw, d_in):
     if FLAGS.dvn_config['preencoder']['type'] == 'concat+mlp':
@@ -13,6 +14,7 @@ def create_preencoder(d_in_raw, d_in):
     return preencoder
 
 def get_one_hot_labelling(N, sel_nodes):
+    cfg = CN.load_cfg(Config.get_config())
     sel_nodes_one_hot = torch.zeros(N, dtype=torch.float32, device=FLAGS.device)
     sel_nodes_one_hot[sel_nodes] = 1
     sel_nodes_one_hot = torch.stack((sel_nodes_one_hot, 1-sel_nodes_one_hot), dim=-1)
@@ -22,9 +24,8 @@ class PreEncoderConcatSelectedOneHotAndMLP(torch.nn.Module):
     def __init__(self, dim_in, dim_out):
         super(PreEncoderConcatSelectedOneHotAndMLP, self).__init__()
 
-        with open(FLAGS.graphgps_config_path, 'r') as f:
-            yaml_content = f.read()
-        cfg = CN.load_cfg(yaml_content)
+        
+        cfg = CN.load_cfg(Config.get_config())
         self.lap_encoder_q = LapPENodeEncoder(cfg.gnn.dim_inner)
         self.lap_encoder_t  = LapPENodeEncoder(cfg.gnn.dim_inner)
 
