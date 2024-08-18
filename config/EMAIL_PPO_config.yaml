@@ -10,7 +10,7 @@ training:
   K_epochs: 10
   eps_clip: 0.2
   gamma: 0.99
-  lr: 0.003
+  lr: 0.0005
   batch_size: 64
   max_training_episodes: 1000000
   ec_policy: 1
