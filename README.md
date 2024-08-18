@@ -15,9 +15,8 @@ Package requirements are in `environment.yml`. Please install required packages 
 To build and run the conda environment use the commands below:
 ```
 conda env create -f environment.yml
-
-To install required packages, use the following command: 
 ```
+To install required packages, use the following command: 
 ```
 conda activate RL_ASM_env
 pip install pyg_lib torch_scatter torch_sparse torch_cluster torch_spline_conv -f https://data.pyg.org/whl/torch-2.0.1+cu117.html
