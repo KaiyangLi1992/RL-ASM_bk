@@ -1,6 +1,6 @@
 import pickle
 import numpy as np
-with open('./result/records_MSRC_21_noiseratio_10_RL_iteration.pkl','rb') as f:
+with open('./results/records_MSRC_21_noiseratio_5_RL_iteration.pkl','rb') as f:
     records = pickle.load(f)
 
 steps = records['steps']
