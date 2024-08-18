@@ -1,0 +1,141 @@
+Metadata-Version: 2.1
+Name: laptools
+Version: 0.2.6
+Summary: Fast constrained linear assignment problem (CLAP) solvers
+Home-page: https://github.com/jdmoorman/laptools
+Author: Jacob Moorman
+Author-email: jacob@moorman.me
+License: MIT License
+Keywords: laptools
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Science/Research 
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Natural Language :: English
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3 :: Only
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Topic :: Scientific/Engineering
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: numpy
+Requires-Dist: scipy
+Requires-Dist: numba
+Provides-Extra: test
+Requires-Dist: codecov; extra == "test"
+Requires-Dist: pytest; extra == "test"
+Requires-Dist: pytest-cov; extra == "test"
+Provides-Extra: docs
+Requires-Dist: sphinx==1.8.5; extra == "docs"
+Provides-Extra: setup
+Requires-Dist: numpy; extra == "setup"
+Requires-Dist: pytest-runner; extra == "setup"
+Requires-Dist: pybind11>=2.5.0; extra == "setup"
+Provides-Extra: dev
+Requires-Dist: codecov; extra == "dev"
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-cov; extra == "dev"
+Requires-Dist: sphinx==1.8.5; extra == "dev"
+Requires-Dist: numpy; extra == "dev"
+Requires-Dist: pytest-runner; extra == "dev"
+Requires-Dist: pybind11>=2.5.0; extra == "dev"
+Requires-Dist: pyperf; extra == "dev"
+Requires-Dist: matplotlib; extra == "dev"
+Requires-Dist: numpy; extra == "dev"
+Requires-Dist: scipy; extra == "dev"
+Requires-Dist: munkres; extra == "dev"
+Requires-Dist: lap; extra == "dev"
+Requires-Dist: lapsolver; extra == "dev"
+Requires-Dist: lapjv; extra == "dev"
+Requires-Dist: pre-commit; extra == "dev"
+Requires-Dist: bumpversion>=0.5.3; extra == "dev"
+Requires-Dist: ipython>=7.5.0; extra == "dev"
+Requires-Dist: tox>=3.5.2; extra == "dev"
+Requires-Dist: twine>=1.13.0; extra == "dev"
+Requires-Dist: wheel>=0.33.1; extra == "dev"
+Provides-Extra: perf
+Requires-Dist: pyperf; extra == "perf"
+Requires-Dist: matplotlib; extra == "perf"
+Requires-Dist: numpy; extra == "perf"
+Requires-Dist: scipy; extra == "perf"
+Requires-Dist: munkres; extra == "perf"
+Requires-Dist: lap; extra == "perf"
+Requires-Dist: lapsolver; extra == "perf"
+Requires-Dist: lapjv; extra == "perf"
+Provides-Extra: all
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: scipy; extra == "all"
+Requires-Dist: numba; extra == "all"
+Requires-Dist: codecov; extra == "all"
+Requires-Dist: pytest; extra == "all"
+Requires-Dist: pytest-cov; extra == "all"
+Requires-Dist: sphinx==1.8.5; extra == "all"
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: pytest-runner; extra == "all"
+Requires-Dist: pybind11>=2.5.0; extra == "all"
+Requires-Dist: codecov; extra == "all"
+Requires-Dist: pytest; extra == "all"
+Requires-Dist: pytest-cov; extra == "all"
+Requires-Dist: sphinx==1.8.5; extra == "all"
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: pytest-runner; extra == "all"
+Requires-Dist: pybind11>=2.5.0; extra == "all"
+Requires-Dist: pyperf; extra == "all"
+Requires-Dist: matplotlib; extra == "all"
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: scipy; extra == "all"
+Requires-Dist: munkres; extra == "all"
+Requires-Dist: lap; extra == "all"
+Requires-Dist: lapsolver; extra == "all"
+Requires-Dist: lapjv; extra == "all"
+Requires-Dist: pre-commit; extra == "all"
+Requires-Dist: bumpversion>=0.5.3; extra == "all"
+Requires-Dist: ipython>=7.5.0; extra == "all"
+Requires-Dist: tox>=3.5.2; extra == "all"
+Requires-Dist: twine>=1.13.0; extra == "all"
+Requires-Dist: wheel>=0.33.1; extra == "all"
+Requires-Dist: pyperf; extra == "all"
+Requires-Dist: matplotlib; extra == "all"
+Requires-Dist: numpy; extra == "all"
+Requires-Dist: scipy; extra == "all"
+Requires-Dist: munkres; extra == "all"
+Requires-Dist: lap; extra == "all"
+Requires-Dist: lapsolver; extra == "all"
+Requires-Dist: lapjv; extra == "all"
+
+<H2 style="color:orange;">laptools is currently unstable.</H2>
+
+![Black Logo](logo.png)
+
+<h2 align="center">Fast Assignment Problem Solvers</h2>
+
+<p align="center">
+<a href="https://pypi.org/project/laptools/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/laptools.svg"></a>
+<a href="https://pypi.org/project/laptools/"><img alt="Supported Python Versions" src="https://img.shields.io/pypi/pyversions/laptools.svg"></a>
+<a href="https://github.com/jdmoorman/laptools/actions"><img alt="Build Status" src="https://github.com/jdmoorman/laptools/workflows/CI/badge.svg"></a>
+<a href="https://codecov.io/gh/jdmoorman/laptools"><img alt="Code Coverage" src="https://codecov.io/gh/jdmoorman/laptools/branch/master/graph/badge.svg"></a>
+<a href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg"></a>
+</p>
+
+---
+
+## Installation
+
+To install laptools, run this command in your terminal:
+
+```bash
+$ pip install -U laptools
+```
+
+This is the preferred method to install laptools,
+as it will always install the most recent release.
+
+If you don't have [pip](https://pip.pypa.io) installed,
+these [installation instructions](http://docs.python-guide.org/en/latest/starting/installation/) can guide
+you through the process.
+
+## Development
+See [CONTRIBUTING.md](CONTRIBUTING.md) for information related to developing the code.
